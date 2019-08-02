@@ -1,0 +1,112 @@
+
+import { Config } from '../Config';
+import { DatabaseAdapter } from './DatabaseAdapter';
+import { expect } from 'chai';
+import 'mocha';
+
+describe('Daemon API', () => {
+  const testCollectionName = 'TEST_COLLECTION';
+  const testDocumentName = 'TEST_DOCUMENT';
+
+  const testDocument = {
+    stringKey: 'testValue',
+    numericKey: 100,
+    booleanKey: true,
+    arrayKey: ['one', 'two', 'three'],
+  };
+
+  const daemonApi = new DatabaseAdapter({
+    projectId: 'a0a8222c-b014-4867-8319-e06b7025abfc',
+    projectToken: 'test_secret_key',
+  });
+
+  it('should throw if a document does not exist', () => {
+    daemonApi
+      .get(testCollectionName, testDocumentName);
+  });
+
+  it('should create a document', () => {
+    return daemonApi.set(testCollectionName, testDocumentName, testDocument)
+      .then((success) => {
+        expect(success).to.be.true;
+      });
+  });
+
+  it('should read a document', () => {
+    return daemonApi
+      .get(testCollectionName, testDocumentName)
+      .then((document) => {
+        expect(document).to.deep.equal(testDocument);
+      });
+  });
+
+  it('should search', () => {
+    return daemonApi
+      .search(testCollectionName, 'stringKey', 'test')
+      .then((results: any) => {
+        expect(results[0]).to.deep.equal(testDocument);
+      });
+  });
+
+  it('should read multiple documents', () => {
+    return daemonApi
+      .getAll(testCollectionName, [testDocumentName])
+      .then((documents) => {
+        expect(documents[0]).to.deep.equal(testDocument);
+      });
+  });
+
+  it('should read multiple documents with predicate', () => {
+    return daemonApi
+      .getAllWhere(testCollectionName, 'stringKey', '=', ['testValue'])
+      .then((documents) => {
+        expect(documents[0]).to.deep.equal(testDocument);
+      });
+  });
+
+  it('should read a document with a predicate', () => {
+    return daemonApi
+      .getWhere(testCollectionName, 'stringKey', '==', 'testValue')
+      .then((document: any) => {
+        expect(document[0]).to.deep.equal(testDocument);
+      });
+  });
+
+  it('should update a document', () => {
+    return daemonApi.update(testCollectionName, testDocumentName, {
+      stringKey: 'newValue',
+    })
+      .then(() => daemonApi.get(testCollectionName, testDocumentName))
+      .then((document: any) => {
+        expect(document.stringKey).to.eq('newValue');
+      });
+  });
+
+  it('should append a field to an array', () => {
+    return daemonApi.arrayPush(testCollectionName, testDocumentName, {
+      arrayKey: 'four',
+    })
+      .then(() => daemonApi.get(testCollectionName, testDocumentName))
+      .then((document: any) => {
+        expect(document.arrayKey.length).to.eq(4);
+      });
+  });
+
+  it('should remove a field from an array', () => {
+    return daemonApi.arrayRemove(testCollectionName, testDocumentName, {
+      arrayKey: 'four',
+    })
+      .then(() => daemonApi.get(testCollectionName, testDocumentName))
+      .then((document: any) => {
+        expect(document.arrayKey.length).to.eq(3);
+      });
+  });
+
+  it('should delete a document', () => {
+    return daemonApi.delete(testCollectionName, testDocumentName)
+      .then((success) => {
+        expect(success).to.be.true;
+      });
+  });
+
+});
