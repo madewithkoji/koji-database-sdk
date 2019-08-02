@@ -314,6 +314,6 @@ export class DatabaseAdapter {
     if (process.env.NODE_TEST) {
       return `http://localhost:3129${path}`;
     }
-    return `https://daemon.jiro.app${path}`;
+    return `https://database.api.gokoji.com${path}`;
   }
 }

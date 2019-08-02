@@ -1,6 +1,6 @@
 {
-  "name": "@madewithkoji/database",
-  "version": "1.0.12",
+  "name": "@withkoji/database",
+  "version": "1.0.13",
   "description": "Koji Database sdk",
   "main": "./dist/index.js",
   "repository": {
