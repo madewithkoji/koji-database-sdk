@@ -40,6 +40,13 @@ describe('Daemon API', () => {
       });
   });
 
+  it('should list all collections for project', () => {
+    return daemonApi.getCollections()
+      .then((collections: any) => {
+        expect(collections).to.include(testCollectionName);
+      });
+  });
+
   it('should search', () => {
     return daemonApi
       .search(testCollectionName, 'stringKey', 'test')

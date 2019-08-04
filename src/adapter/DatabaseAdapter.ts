@@ -93,6 +93,23 @@ export class DatabaseAdapter {
     }
   }
 
+  public async getCollections<T>(): Promise<T> {
+    const options: rp.OptionsWithUri = {
+      uri: this.buildUri('/v1/store/getCollections'),
+      method: 'POST',
+      headers: this.headers,
+      json: true,
+      body: {},
+    };
+
+    try {
+      const response = await rp(options);
+      return response.collections;
+    } catch (err) {
+      throw new Error('Service error');
+    }
+  }
+
   public async search<T>(
     collection: string,
     queryKey: string,
