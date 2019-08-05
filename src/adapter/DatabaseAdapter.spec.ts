@@ -35,7 +35,8 @@ describe('Daemon API', () => {
   it('should read a document', () => {
     return daemonApi
       .get(testCollectionName, testDocumentName)
-      .then((document) => {
+      .then((document: any) => {
+        delete document._id;
         expect(document).to.deep.equal(testDocument);
       });
   });
@@ -51,6 +52,7 @@ describe('Daemon API', () => {
     return daemonApi
       .search(testCollectionName, 'stringKey', 'test')
       .then((results: any) => {
+        delete results[0]._id;
         expect(results[0]).to.deep.equal(testDocument);
       });
   });
@@ -58,7 +60,8 @@ describe('Daemon API', () => {
   it('should read multiple documents', () => {
     return daemonApi
       .getAll(testCollectionName, [testDocumentName])
-      .then((documents) => {
+      .then((documents: any) => {
+        delete documents[0]._id;
         expect(documents[0]).to.deep.equal(testDocument);
       });
   });
@@ -66,7 +69,8 @@ describe('Daemon API', () => {
   it('should read multiple documents with predicate', () => {
     return daemonApi
       .getAllWhere(testCollectionName, 'stringKey', '=', ['testValue'])
-      .then((documents) => {
+      .then((documents: any) => {
+        delete documents[0]._id;
         expect(documents[0]).to.deep.equal(testDocument);
       });
   });
@@ -75,6 +79,7 @@ describe('Daemon API', () => {
     return daemonApi
       .getWhere(testCollectionName, 'stringKey', '==', 'testValue')
       .then((document: any) => {
+        delete document[0]._id;
         expect(document[0]).to.deep.equal(testDocument);
       });
   });
