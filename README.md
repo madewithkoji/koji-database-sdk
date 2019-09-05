@@ -2,4 +2,4 @@
 
 Connect to the Koji database
 
-# Docs can be found here: https://withkoji.com/docs/editor/database
+Docs can be found here: https://withkoji.com/docs/editor/database
