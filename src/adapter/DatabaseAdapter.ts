@@ -353,6 +353,7 @@ export class DatabaseAdapter {
 
     try {
       const response = await rp(options);
+      console.log(response);
       return response.url;
     } catch (err) {
       console.log(err);
