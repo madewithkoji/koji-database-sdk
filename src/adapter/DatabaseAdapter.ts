@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as rp from 'request-promise-native';
 import { Headers } from 'request';
 import { StatusCodeError } from 'request-promise-native/errors';
@@ -321,6 +322,34 @@ export class DatabaseAdapter {
       return true;
     } catch (e) {
       return false;
+    }
+  }
+
+  public async uploadfile(
+    path: string,
+    filename?: string,
+    contentType?: string,
+  ): Promise<string> {
+    const options: rp.OptionsWithUri = {
+      uri: this.buildUri('/v1/objectStore/upload'),
+      method: 'POST',
+      headers: this.headers,
+      formData: {
+        file: {
+          value: fs.createReadStream(path),
+          options: {
+            filename,
+            contentType,
+          },
+        },
+      },
+    };
+
+    try {
+      const response = await rp(options);
+      return response.url;
+    } catch (err) {
+      throw new Error('Service error');
     }
   }
 
