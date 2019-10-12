@@ -353,10 +353,9 @@ export class DatabaseAdapter {
 
     try {
       const response = await rp(options);
-      console.log(response);
-      return response.url;
+      const { url } = JSON.parse(response);
+      return url;
     } catch (err) {
-      console.log(err);
       throw new Error('Service error');
     }
   }
