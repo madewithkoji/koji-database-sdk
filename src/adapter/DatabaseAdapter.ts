@@ -325,7 +325,7 @@ export class DatabaseAdapter {
     }
   }
 
-  public async uploadfile(
+  public async uploadFile(
     path: string,
     filename?: string,
     contentType?: string,
