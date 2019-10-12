@@ -12,6 +12,12 @@ export class DatabaseAdapter {
   get headers(): Headers {
     return {
       'Content-Type': 'application/json',
+      ...this.authHeaders,
+    };
+  }
+
+  get authHeaders(): Headers {
+    return {
       'X-Koji-Project-Id': this.config.projectId,
       'X-Koji-Project-Token': this.config.projectToken,
     };
@@ -333,7 +339,7 @@ export class DatabaseAdapter {
     const options: rp.OptionsWithUri = {
       uri: this.buildUri('/v1/objectStore/upload'),
       method: 'POST',
-      headers: this.headers,
+      headers: this.authHeaders,
       formData: {
         file: {
           value: fs.createReadStream(path),
@@ -349,6 +355,7 @@ export class DatabaseAdapter {
       const response = await rp(options);
       return response.url;
     } catch (err) {
+      console.log(err);
       throw new Error('Service error');
     }
   }
