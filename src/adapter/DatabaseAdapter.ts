@@ -331,6 +331,7 @@ export class DatabaseAdapter {
     }
   }
 
+  // Upload a file
   public async uploadFile(
     path: string,
     filename?: string,
@@ -360,6 +361,33 @@ export class DatabaseAdapter {
     }
   }
 
+  // Generate a signed URL for uploading a file directly to the koji-cdn S3
+  // bucket
+  public async generateSignedUploadRequest(
+    fileName: string,
+  ): Promise<SignedUploadRequest> {
+    const options: rp.OptionsWithUri = {
+      uri: this.buildUri('/v1/objectStore/upload'),
+      method: 'POST',
+      headers: this.authHeaders,
+      json: true,
+      body: {
+        fileName,
+      },
+    };
+
+    try {
+      const response = await rp(options);
+      const { url, signedRequest } = JSON.parse(response);
+      return {
+        url,
+        signedRequest,
+      };
+    } catch (err) {
+      throw new Error('Service error');
+    }
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Helpers
   //////////////////////////////////////////////////////////////////////////////
@@ -369,4 +397,12 @@ export class DatabaseAdapter {
     }
     return `https://database.api.gokoji.com${path}`;
   }
+}
+
+export interface SignedUploadRequest {
+  url: string,
+  signedRequest: {
+    url: string,
+    fields: {[index: string]: string};
+  };
 }
