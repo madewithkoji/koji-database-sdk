@@ -367,7 +367,7 @@ export class DatabaseAdapter {
     fileName: string,
   ): Promise<SignedUploadRequest> {
     const options: rp.OptionsWithUri = {
-      uri: this.buildUri('/v1/objectStore/upload'),
+      uri: this.buildUri('/v1/objectStore/generateSignedRequest'),
       method: 'POST',
       headers: this.authHeaders,
       json: true,
