@@ -378,7 +378,7 @@ export class DatabaseAdapter {
 
     try {
       const response = await rp(options);
-      const { url, signedRequest } = JSON.parse(response);
+      const { url, signedRequest } = response;
       return {
         url,
         signedRequest,
