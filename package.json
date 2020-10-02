@@ -1,7 +1,7 @@
 {
   "name": "@withkoji/database",
   "version": "1.0.22",
-  "description": "Koji Database sdk",
+  "description": "SDK for communicating between Koji template and its in-built database service.",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
