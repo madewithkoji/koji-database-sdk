@@ -16,7 +16,7 @@ Install the package in the backend service of your Koji project.
 npm install --save @withkoji/database
 ```
 
-**NOTE:** To support instant remixes of your template, you must also install the [@withkoji/vcc package](https://developer.withkoji.com/reference/packages/withkoji-vcc-package) and implement the `VccMiddleware` on your backend server. This middleware maintains the process variables for instant remixes, ensuring that database access is restricted to the correct remix version.
+**NOTE:** To support instant remixes of your template, you must also install the [@withkoji/vcc package](https://developer.withkoji.com/reference/packages/withkoji-vcc-package) and implement the `VccMiddleware` on your backend server. This middleware maintains the environment variables for instant remixes, ensuring that database access is restricted to the correct remix version.
 
 ## Basic use
 
