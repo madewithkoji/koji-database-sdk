@@ -121,4 +121,18 @@ describe('Daemon API', () => {
       });
   });
 
+  it('should complete a transaction', async () => {
+    const transaction = daemonApi.beginTransaction();
+    await transaction.set(testCollectionName, testDocumentName, testDocument);
+    await transaction.update(testCollectionName, testDocumentName, {
+      stringKey: 'newValue',
+    });
+    await transaction.commitTransaction();
+
+    const document: any = await daemonApi.get(testCollectionName, testDocumentName);
+    expect(document.stringKey).to.eq('newValue');
+
+    await daemonApi.delete(testCollectionName, testDocumentName);
+  });
+
 });

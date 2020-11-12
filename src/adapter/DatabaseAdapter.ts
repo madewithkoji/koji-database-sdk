@@ -1,13 +1,18 @@
 import * as fs from 'fs';
 import * as rp from 'request-promise-native';
 import { Headers } from 'request';
-import { StatusCodeError } from 'request-promise-native/errors';
 
 import { Config } from '../Config';
 
-export class DatabaseAdapter {
+export enum DatabaseAdapterMode {
+  TRANSACTION = 'transaction',
+  IMMEDIATE = 'immediate',
+};
 
+export class DatabaseAdapter {
   private readonly config: Config;
+  private readonly mode: DatabaseAdapterMode;
+  private transactionQueue: rp.OptionsWithUri[] = [];
 
   get headers(): Headers {
     return {
@@ -26,7 +31,10 @@ export class DatabaseAdapter {
   //////////////////////////////////////////////////////////////////////////////
   // Setup
   //////////////////////////////////////////////////////////////////////////////
-  constructor(customConfig: Config | undefined) {
+  constructor(
+    customConfig: Config | undefined,
+    mode: DatabaseAdapterMode = DatabaseAdapterMode.IMMEDIATE,
+  ) {
     if (customConfig) {
       this.config = customConfig;
     } else {
@@ -44,39 +52,21 @@ export class DatabaseAdapter {
         projectToken: process.env.KOJI_PROJECT_TOKEN,
       };
     }
+
+    this.mode = mode;
   }
 
   //////////////////////////////////////////////////////////////////////////////
   // Store APIs
   //////////////////////////////////////////////////////////////////////////////
-  public async set(
-    collection: string,
-    documentName: string,
-    documentBody: any,
-  ): Promise<boolean> {
-    const options: rp.OptionsWithUri = {
-      uri: this.buildUri('/v1/store/set'),
-      method: 'POST',
-      headers: this.headers,
-      json: true,
-      body: {
-        collection,
-        documentName,
-        documentBody,
-      },
-    };
-    try {
-      await rp(options);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
   public async get<T>(
     collection: string,
     documentName?: string | null,
   ): Promise<T> {
+    if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+      throw new Error('not available inside transaction');
+    }
+
     const options: rp.OptionsWithUri = {
       uri: this.buildUri('/v1/store/get'),
       method: 'POST',
@@ -89,7 +79,7 @@ export class DatabaseAdapter {
     };
 
     try {
-      const response = await rp(options);
+      const response = await this.request(options);
       return response.document;
     } catch (err) {
       if (err.statusCode === 404) {
@@ -101,6 +91,10 @@ export class DatabaseAdapter {
   }
 
   public async getCollections<T>(): Promise<T> {
+    if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+      throw new Error('not available inside transaction');
+    }
+
     const options: rp.OptionsWithUri = {
       uri: this.buildUri('/v1/store/getCollections'),
       method: 'POST',
@@ -110,7 +104,7 @@ export class DatabaseAdapter {
     };
 
     try {
-      const response = await rp(options);
+      const response = await this.request(options);
       return response.collections;
     } catch (err) {
       throw new Error('Service error');
@@ -122,6 +116,10 @@ export class DatabaseAdapter {
     queryKey: string,
     queryValue: string,
   ): Promise<T> {
+    if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+      throw new Error('not available inside transaction');
+    }
+
     const options: rp.OptionsWithUri = {
       uri: this.buildUri('/v1/store/search'),
       method: 'POST',
@@ -135,7 +133,7 @@ export class DatabaseAdapter {
     };
 
     try {
-      const response = await rp(options);
+      const response = await this.request(options);
       return response.results;
     } catch (err) {
       if (err.statusCode === 404) {
@@ -152,6 +150,10 @@ export class DatabaseAdapter {
     predicateOperation: string,
     predicateValue: string,
   ): Promise<T> {
+    if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+      throw new Error('not available inside transaction');
+    }
+
     const options: rp.OptionsWithUri = {
       uri: this.buildUri('/v1/store/get'),
       method: 'POST',
@@ -168,7 +170,7 @@ export class DatabaseAdapter {
     };
 
     try {
-      const response = await rp(options);
+      const response = await this.request(options);
       return response.document;
     } catch (err) {
       if (err.statusCode === 404) {
@@ -183,6 +185,10 @@ export class DatabaseAdapter {
     collection: string,
     documentNames: string[],
   ): Promise<T[]> {
+    if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+      throw new Error('not available inside transaction');
+    }
+
     const options: rp.OptionsWithUri = {
       uri: this.buildUri('/v1/store/getAll'),
       method: 'POST',
@@ -195,7 +201,7 @@ export class DatabaseAdapter {
     };
 
     try {
-      const response = await rp(options);
+      const response = await this.request(options);
       return response.results;
     } catch (err) {
       if (err.statusCode === 404) {
@@ -212,6 +218,10 @@ export class DatabaseAdapter {
     predicateOperation: string,
     predicateValues: string[],
   ): Promise<T[]> {
+    if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+      throw new Error('not available inside transaction');
+    }
+
     const options: rp.OptionsWithUri = {
       uri: this.buildUri('/v1/store/getAllWhere'),
       method: 'POST',
@@ -226,7 +236,7 @@ export class DatabaseAdapter {
     };
 
     try {
-      const response = await rp(options);
+      const response = await this.request(options);
       return response.results;
     } catch (err) {
       if (err.statusCode === 404) {
@@ -237,11 +247,39 @@ export class DatabaseAdapter {
     }
   }
 
+  public async set(
+    collection: string,
+    documentName: string,
+    documentBody: any,
+  ): Promise<boolean|void> {
+    const options: rp.OptionsWithUri = {
+      uri: this.buildUri('/v1/store/set'),
+      method: 'POST',
+      headers: this.headers,
+      json: true,
+      body: {
+        collection,
+        documentName,
+        documentBody,
+      },
+    };
+    try {
+      await this.request(options);
+      if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+        return;
+      }
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   public async update(
     collection: string,
     documentName: string,
     documentBody: any,
-  ): Promise<boolean> {
+  ): Promise<boolean|void> {
     const options: rp.OptionsWithUri = {
       uri: this.buildUri('/v1/store/update'),
       method: 'POST',
@@ -254,7 +292,11 @@ export class DatabaseAdapter {
       },
     };
     try {
-      await rp(options);
+      await this.request(options);
+      if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+        return;
+      }
+
       return true;
     } catch (e) {
       return false;
@@ -265,7 +307,7 @@ export class DatabaseAdapter {
     collection: string,
     documentName: string,
     documentBody: any,
-  ): Promise<boolean> {
+  ): Promise<boolean|void> {
     const options: rp.OptionsWithUri = {
       uri: this.buildUri('/v1/store/update/push'),
       method: 'POST',
@@ -278,7 +320,11 @@ export class DatabaseAdapter {
       },
     };
     try {
-      await rp(options);
+      await this.request(options);
+      if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+        return;
+      }
+
       return true;
     } catch (e) {
       return false;
@@ -289,7 +335,7 @@ export class DatabaseAdapter {
     collection: string,
     documentName: string,
     documentBody: any,
-  ): Promise<boolean> {
+  ): Promise<boolean|void> {
     const options: rp.OptionsWithUri = {
       uri: this.buildUri('/v1/store/update/remove'),
       method: 'POST',
@@ -302,7 +348,11 @@ export class DatabaseAdapter {
       },
     };
     try {
-      await rp(options);
+      await this.request(options);
+      if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+        return;
+      }
+
       return true;
     } catch (e) {
       return false;
@@ -312,7 +362,7 @@ export class DatabaseAdapter {
   public async delete(
     collection: string,
     documentName: string,
-  ): Promise<boolean> {
+  ): Promise<boolean|void> {
     const options: rp.OptionsWithUri = {
       uri: this.buildUri('/v1/store/delete'),
       method: 'POST',
@@ -324,7 +374,11 @@ export class DatabaseAdapter {
       },
     };
     try {
-      await rp(options);
+      await this.request(options);
+      if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+        return;
+      }
+
       return true;
     } catch (e) {
       return false;
@@ -336,7 +390,11 @@ export class DatabaseAdapter {
     path: string,
     filename?: string,
     contentType?: string,
-  ): Promise<string> {
+  ): Promise<string|void> {
+    if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+      throw new Error('not available inside transaction');
+    }
+
     const options: rp.OptionsWithUri = {
       uri: this.buildUri('/v1/objectStore/upload'),
       method: 'POST',
@@ -353,7 +411,8 @@ export class DatabaseAdapter {
     };
 
     try {
-      const response = await rp(options);
+      const response = await this.request(options);
+
       const { url } = JSON.parse(response);
       return url;
     } catch (err) {
@@ -366,6 +425,10 @@ export class DatabaseAdapter {
   public async generateSignedUploadRequest(
     fileName: string,
   ): Promise<SignedUploadRequest> {
+    if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+      throw new Error('not available inside transaction');
+    }
+
     const options: rp.OptionsWithUri = {
       uri: this.buildUri('/v1/objectStore/generateSignedRequest'),
       method: 'POST',
@@ -377,7 +440,7 @@ export class DatabaseAdapter {
     };
 
     try {
-      const response = await rp(options);
+      const response = await this.request(options);
       const { url, signedRequest } = response;
       return {
         url,
@@ -388,6 +451,32 @@ export class DatabaseAdapter {
     }
   }
 
+  // Create a new transaction
+  public beginTransaction(): DatabaseAdapter {
+    return new DatabaseAdapter(this.config, DatabaseAdapterMode.TRANSACTION);
+  }
+  public async commitTransaction() {
+    if (this.mode !== DatabaseAdapterMode.TRANSACTION) {
+      throw new Error('not in a trasaction');
+    }
+
+    // Build one big request from everything
+    const requestBody = this.transactionQueue.map(({ uri, body }) => ({
+      uri,
+      body,
+    }));
+
+    await rp({
+      uri: this.buildUri('/v1/store/transaction'),
+      method: 'POST',
+      headers: this.authHeaders,
+      json: true,
+      body: {
+        operations: requestBody,
+      },
+    });
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Helpers
   //////////////////////////////////////////////////////////////////////////////
@@ -396,6 +485,17 @@ export class DatabaseAdapter {
       return `http://localhost:3129${path}`;
     }
     return `https://database.api.gokoji.com${path}`;
+  }
+
+  private request(options: rp.OptionsWithUri) {
+    if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+      // If we're in a transaction, batch all these requests and send them off
+      // all at once when we commit the transaction.
+      this.transactionQueue.push(options);
+    } else {
+      // Otherwise, send the request immediately and return the result
+      return rp(options);
+    }
   }
 }
 
