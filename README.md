@@ -1,4 +1,5 @@
 # Koji Database SDK
+![npm (scoped)](https://img.shields.io/npm/v/@withkoji/database?color=green&style=flat-square)
 
 **SDK for communicating between a Koji template and its in-built database service.**
 
