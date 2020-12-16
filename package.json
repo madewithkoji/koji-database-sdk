@@ -1,6 +1,6 @@
 {
   "name": "@withkoji/database",
-  "version": "1.0.24",
+  "version": "1.0.25",
   "description": "SDK for communicating between a Koji template and its in-built database service.",
   "main": "./dist/index.js",
   "repository": {
@@ -17,7 +17,7 @@
     "watch:build": "tsc --watch",
     "watch:server": "nodemon './dist/index.js' --watch './dist'",
     "prepublish": "npm-run-all clean build",
-    "test": "NODE_TEST=true mocha -r ts-node/register src/**/*.spec.ts"
+    "test": "NODE_TEST=true mocha -r ts-node/register src/**/*.spec.ts --timeout 30000"
   },
   "files": [
     "dist/**/*"

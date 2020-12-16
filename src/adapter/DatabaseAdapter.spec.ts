@@ -17,7 +17,7 @@ describe('Daemon API', () => {
 
   const daemonApi = new DatabaseAdapter({
     projectId: 'a0a8222c-b014-4867-8319-e06b7025abfc',
-    projectToken: 'test_secret_key',
+    projectToken: 'redacted',
   });
 
   it('should throw if a document does not exist', () => {
@@ -135,4 +135,35 @@ describe('Daemon API', () => {
     await daemonApi.delete(testCollectionName, testDocumentName);
   });
 
+  it('should generate a signed upload request', async () => {
+    const { url, signedRequest } = await daemonApi.generateSignedUploadRequest('filename.jpg');
+    expect(url).to.not.be.null;
+    expect(signedRequest).to.not.be.null;
+  });
+
+  it('should transcode an uploaded file for HLS streaming', async () => {
+    const {
+      url,
+      callbackToken,
+    } = await daemonApi.transcodeAsset(
+      'https://objects.koji-cdn.com/a0a8222c-b014-4867-8319-e06b7025abfc/userData/test-video.mov',
+      'video+hls',
+    );
+
+    expect(url).to.not.be.undefined;
+    expect(callbackToken).to.not.be.undefined;
+
+    await new Promise((resolve: any) => {
+      const checkStatus = async () => {
+        const { isFinished } = await daemonApi.getTranscodeStatus(callbackToken);
+        if (isFinished) {
+          resolve();
+        } else {
+          setTimeout(() => checkStatus(), 500);
+        }
+      };
+
+      checkStatus();
+    });
+  });
 });

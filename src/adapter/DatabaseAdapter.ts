@@ -451,6 +451,85 @@ export class DatabaseAdapter {
     }
   }
 
+  // Transcode an asset that has been uploaded to koji-cdn. This method returns
+  // the URL of the transcoded asset, as well as a callback token that can be
+  // used in conjunction with `getTranscodeStatus` to poll for transcode progress.
+  // Transcoding videos usually completes in a few seconds, but can be longer
+  // for longer videos. Use something like:
+  //
+  // await new Promise((resolve: any) => {
+  //   const checkStatus = async () => {
+  //     const { isFinished } = await database.getTranscodeStatus(callbackToken);
+  //     if (isFinished) {
+  //       resolve();
+  //     } else {
+  //       setTimeout(() => checkStatus(), 500);
+  //     }
+  //   };
+
+  //   checkStatus();
+  // });
+
+  public async transcodeAsset(
+    path: string,
+    transcodeType: 'video+hls',
+  ) {
+    if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+      throw new Error('not available inside transaction');
+    }
+
+    const options: rp.OptionsWithUri = {
+      uri: this.buildUri('/v1/objectStore/transcode'),
+      method: 'POST',
+      headers: this.authHeaders,
+      json: true,
+      body: {
+        path,
+        type: transcodeType,
+      },
+    };
+
+    try {
+      const response = await this.request(options);
+      const { url, callbackTokens } = response;
+      return {
+        url,
+        callbackToken: callbackTokens[0],
+      };
+    } catch (err) {
+      console.log(err);
+      throw new Error('Service error');
+    }
+  }
+
+  public async getTranscodeStatus(
+    callbackToken: string,
+  ) {
+    if (this.mode === DatabaseAdapterMode.TRANSACTION) {
+      throw new Error('not available inside transaction');
+    }
+
+    const options: rp.OptionsWithUri = {
+      uri: this.buildUri('/v1/objectStore/transcode/status'),
+      method: 'POST',
+      headers: this.authHeaders,
+      json: true,
+      body: {
+        callbackToken,
+      },
+    };
+
+    try {
+      const response = await this.request(options);
+      const { isResolved } = response;
+      return {
+        isFinished: isResolved,
+      };
+    } catch (err) {
+      throw new Error('Service error');
+    }
+  }
+
   // Create a new transaction
   public beginTransaction(): DatabaseAdapter {
     return new DatabaseAdapter(this.config, DatabaseAdapterMode.TRANSACTION);
