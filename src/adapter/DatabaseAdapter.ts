@@ -14,6 +14,13 @@ export class DatabaseAdapter {
   private readonly mode: DatabaseAdapterMode;
   private transactionQueue: rp.OptionsWithUri[] = [];
 
+  public static valueTypes = {
+    increment: (number: number) => ({
+      _updateType: 'increment',
+      value: number,
+    }),
+  };
+
   get headers(): Headers {
     return {
       'Content-Type': 'application/json',

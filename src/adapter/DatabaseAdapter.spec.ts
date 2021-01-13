@@ -94,6 +94,16 @@ describe('Daemon API', () => {
       });
   });
 
+  it('should increment a value inside a document', () => {
+    return daemonApi.update(testCollectionName, testDocumentName, {
+      numericKey: DatabaseAdapter.valueTypes.increment(4),
+    })
+      .then(() => daemonApi.get(testCollectionName, testDocumentName))
+      .then((document: any) => {
+        expect(document.numericKey).to.eq(104);
+      });
+  });
+
   it('should append a field to an array', () => {
     return daemonApi.arrayPush(testCollectionName, testDocumentName, {
       arrayKey: 'four',
