@@ -3,6 +3,9 @@
 
 **SDK for communicating between a Koji template and its in-built database service.**
 
+[NOTE]
+This package is deprecated and is included only for backwards compatibility. For new templates, use @withkoji/core.
+
 ## Overview
 
 Each Koji project includes a key-value store that you can use as a backend database for simple use cases, such as collecting information from users, aggregating survey or poll results, and creating leaderboards for games.
