@@ -3,7 +3,7 @@
 
 **SDK for communicating between a Koji template and its in-built database service.**
 
-[NOTE]
+**NOTE:**
 This package is deprecated and is included only for backwards compatibility. For new templates, use @withkoji/core.
 
 ## Overview
