@@ -1,6 +1,6 @@
 {
   "name": "@withkoji/database",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "description": "SDK for communicating between a Koji template and its in-built database service.",
   "main": "./dist/index.js",
   "repository": {
